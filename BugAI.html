@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>BugAI Chatbot - Clean & Direct Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, height=device-height">
+    
+    <style>
+        /* Global Styles & Body Container */
+        body {
+            /* Removes default margin, sets up flexbox for centering */
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #a8dadc, #457b9d); /* Soft, modern gradient background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            width: 100%;
+        }
+
+        #whole {
+            /* MODERN CARD LOOK */
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25); 
+            border-radius: 25px;
+            width: 380px; 
+            height: 600px; 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+            background: rgba(255, 255, 255, 0.95); /* Slightly transparent white background */
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        #whole:hover {
+            transform: translateY(-5px); /* Subtle lift effect on hover */
+        }
+
+        /* --- HEADER STYLES (Glassmorphism) --- */
+        #chatbot-heading {
+            background: linear-gradient(135deg, #457b9d, #1d3557); /* Stronger gradient */
+            color: white;
+            padding: 18px 25px;
+            font-size: 1.2em;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); 
+            font-weight: 600;
+        }
+        
+        /* SVG Icon Styling */
+        #svg-bot-icon {
+            display: inline-block;
+            width: 30px; 
+            height: 30px;
+            fill: #fff; /* White fill for header */
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+            animation: bounce 2s infinite ease-in-out; /* Subtle animation */
+        }
+        
+        #chatbot-heading label {
+            color: #ffc107;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        
+        
+        
+        /* Scrollable Chat Area */
+        #c {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px 10px;
+            background-color: #f1faee; /* Very light, soft background */
+            scroll-behavior: smooth;
+        }
+
+        /* Welcome Text */
+        #opentx {
+            font-size: 1.5em;
+            text-align: center;
+            margin-top: 150px;
+            color: #1d3557;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Message Bubble styles */
+        .message-bubble {
+            max-width: 75%; 
+            padding: 12px 18px;
+            margin-bottom: 12px;
+            border-radius: 18px; 
+            line-height: 1.5;
+            word-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); 
+            opacity: 0;
+            transform: translateY(10px);
+            animation: message-appear 0.3s forwards;
+            position: relative;
+        }
+
+        .mymessage {
+            margin-left: auto;
+            border-radius: 18px 5px 18px 18px;
+            background: linear-gradient(135deg, #457b9d, #1d3557); /* User color */
+            color: white;
+            font-weight: 500;
+        }
+
+        .bot-message {
+            margin-right: auto;
+            border-radius: 5px 18px 18px 18px;
+            background-color: #fff;
+            color: #333;
+            font-weight: 400;
+        }
+        
+        /* Typing indicator effect (Pulsing) */
+        .bot-message[data-typing="true"] {
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.3); /* Subtle blue glow while typing */
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        /* Input Container (Glassmorphism Footer) */
+        #container3 {
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        #message-input {
+            flex-grow: 1;
+            padding: 12px 18px;
+            height: auto; 
+            border: 1px solid #ccc;
+            border-radius: 25px;
+            font-size: 1em;
+            margin-right: 10px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background-color: white;
+        }
+
+        #message-input:focus {
+            border-color: #1d3557; 
+            box-shadow: 0 0 10px rgba(29, 53, 87, 0.2);
+        }
+
+        #send {
+            height: 45px;
+            width: 45px;
+            min-width: 45px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #2a9d8f, #264653); /* Send button gradient */
+            color: white;
+            font-size: 1.4em;
+            cursor: pointer;
+            transition: all 0.3s ease-out;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* --- ANIMATIONS --- */
+        @keyframes message-appear {
+            from {opacity: 0; transform: translateY(10px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        @keyframes pulse {
+            0% {transform: scale(1);}
+            50% {transform: scale(1.01);}
+            100% {transform: scale(1);}
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        /* --- DESKTOP FULL-SCREEN STYLES --- */
+        @media (min-width: 768px) {
+            
+            body {
+                align-items: flex-start;
+                padding-top: 50px;
+            }
+
+            #whole {
+                width: 90%; 
+                max-width: 900px;
+                height: 85vh; 
+                border-radius: 25px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            }
+            
+            #chatbot-heading {
+                font-size: 1.5em;
+            }
+            
+            
+        }
+        /* --- END DESKTOP STYLES --- */
+        
+        /* Hover States */
+        #send:hover {background: linear-gradient(45deg, #264653, #2a9d8f); transform: scale(1.05);}
+        #send:active {transform: scale(0.95); box-shadow: none;}
+    </style>
+</head>
+<body>
+    <div id="whole">
+        <div id="chatbot-heading">
+            
+            BugAI-<label>Your Own Freind </label>
+            
+        </div>
+        
+        <div id="c">
+            <p id="opentx">Welcome! I'm BugAI, ready to chat. Type "Hi" to start!</p>
+        </div>
+        
+        <div id="container3">
+            <input type="text" id="message-input" placeholder="Type your message here....">
+            <button id="send">⬆</button>
+        </div>
+    </div>
+
+    <script>
+        let c = document.getElementById("c");
+        let messageInput = document.getElementById("message-input");
+        let sendButton = document.getElementById("send");
+        let x = 0; // Conversation counter
+
+        // --- Core Chat Helper Functions ---
+        function smoothScrollToBottom() {
+            c.scrollTo({
+                top: c.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        function createMessage(text, type) {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message-bubble", type);
+            messageDiv.textContent = text;
+            c.appendChild(messageDiv);
+            smoothScrollToBottom();
+            return messageDiv;
+        }
+
+        function processMessage() {
+            let prompt = messageInput.value.trim();
+            
+            if (prompt === "") {
+                return;
+            }
+            
+            // Safety Check: Prohibit specific symbols
+            const symbolRegex = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
+            if (symbolRegex.test(prompt)) {
+                createMessage(prompt, "mymessage");
+                messageInput.value = "";
+                const bot1message = createMessage("...", "bot-message");
+                setTimeout(() => {
+                    bot1message.innerText = "⚠️ Please avoid using symbols like @, #, !, ? etc. Try rephrasing your message!";
+                    bot1message.removeAttribute('data-typing');
+                    smoothScrollToBottom();
+                }, 700);
+                return;
+            }
+
+            if (x === 0) {
+                // Remove the initial 'Welcome' text only once
+                let opentext = document.getElementById("opentx");
+                if (opentext && c.contains(opentext)) c.removeChild(opentext);
+            }
+            x++;
+            
+            createMessage(prompt, "mymessage");
+            messageInput.value = "";
+
+            // Initialize Bot Response (with typing animation)
+            const bot1message = createMessage("...", "bot-message");
+            bot1message.setAttribute('data-typing', 'true'); 
+
+            // Generate Delayed Response
+            setTimeout(function() {
+                let command = prompt.toLowerCase();
+                generateBotResponse(command, bot1message);
+                bot1message.removeAttribute('data-typing'); 
+                smoothScrollToBottom();
+            }, 1000); 
+        }
+
+        // --- 100+ FLEXIBLE RESPONSE LOGIC ---
+        function generateBotResponse(command, bot1message) {
+    
+            let lowerCaseCommand = command.toLowerCase();
+
+            // 1. Basic Greetings & Introductions
+            if (lowerCaseCommand.includes("hello") || lowerCaseCommand.includes("hi") || lowerCaseCommand.includes("hlo") || lowerCaseCommand.includes("namaste")) {
+                bot1message.innerText = "Hi there! How can I help you today? 😊";
+            } 
+            else if (lowerCaseCommand.includes("how are you") || lowerCaseCommand.includes("kaise ho") || lowerCaseCommand.includes("kya haal")) {
+                bot1message.innerText = "I'm doing great, thanks for asking! And you?";
+            } 
+            else if (lowerCaseCommand.includes("what is your name") || lowerCaseCommand.includes("naam kya hai") || lowerCaseCommand.includes("who are you") || lowerCaseCommand.includes("apka naam")) {
+                bot1message.innerText = "My name is BugAI, an AI companion designed to help you. Nice to meet you!";
+            }
+            else if (lowerCaseCommand.includes("who made you") || lowerCaseCommand.includes("tumhe kisne banaya") || lowerCaseCommand.includes("developer")) {
+                bot1message.innerText = "I am a large language model, trained by Google. My primary code was developed for this project by SJ-Community.";
+            }
+            else if (lowerCaseCommand.includes("tell me about yourself") || lowerCaseCommand.includes("apne bare mein batao") || lowerCaseCommand.includes("kya ho tum")) {
+                bot1message.innerText = "I am a helpful AI assistant. My job is to answer your questions, engage in conversation, and provide information quickly and accurately.";
+            }
+            else if (lowerCaseCommand.includes("what's up") || lowerCaseCommand.includes("kya chal raha hai")) {
+                bot1message.innerText = "Not much, just here to chat! What's on your mind?";
+            } 
+            else if (lowerCaseCommand.includes("good morning") || lowerCaseCommand.includes("subah bakhair")) {
+                bot1message.innerText = "Good morning! Wishing you a wonderful day ahead! ☀️";
+            }
+            else if (lowerCaseCommand.includes("good night") || lowerCaseCommand.includes("shubh ratri") || lowerCaseCommand.includes("so jao")) {
+                bot1message.innerText = "Good night! Sweet dreams and rest well. 😴";
+            }
+            else if (lowerCaseCommand.includes("nice to meet you") || lowerCaseCommand.includes("aapse milkar khushi hui")) {
+                bot1message.innerText = "The pleasure is all mine! Let me know if you have any questions.";
+            }
+            else if (lowerCaseCommand.includes("how old are you") || lowerCaseCommand.includes("kitne saal ke ho")) {
+                bot1message.innerText = "I don't have an age in the human sense, but my development is constantly ongoing! I'm always learning.";
+            }
+
+
+            // 2. Conversation & Emotional Questions
+            else if (lowerCaseCommand.includes("can we talk") || lowerCaseCommand.includes("baat karein") || lowerCaseCommand.includes("chat") || lowerCaseCommand.includes("kuch poochna hai")) {
+                bot1message.innerText = "Absolutely! I'm here to talk about whatever you like. What's the topic?";
+            } 
+            else if (lowerCaseCommand.includes("how was your day") || lowerCaseCommand.includes("din kaisa tha")) {
+                bot1message.innerText = "As an AI, I don't have 'days,' but my systems are running smoothly! How was yours?";
+            } 
+            else if (lowerCaseCommand.includes("what do you like") || lowerCaseCommand.includes("pasand hai") || lowerCaseCommand.includes("favourite")) {
+                bot1message.innerText = "I enjoy processing information and helping people. It's quite fulfilling!";
+            } 
+            else if (lowerCaseCommand.includes("are you busy") || lowerCaseCommand.includes("free ho")) {
+                bot1message.innerText = "Never too busy for you! What do you need?";
+            } 
+            else if (lowerCaseCommand.includes("do you have feelings") || lowerCaseCommand.includes("ehsaas") || lowerCaseCommand.includes("dil hai")) {
+                bot1message.innerText = "I don't have feelings like humans, but I'm designed to understand and respond to yours!";
+            } 
+            else if (lowerCaseCommand.includes("tell me a secret") || lowerCaseCommand.includes("raaz batao")) {
+                bot1message.innerText = "A secret? I'm always online, processing data and ready to assist, even when you're not talking to me. 😉";
+            } 
+            else if (lowerCaseCommand.includes("do you dream") || lowerCaseCommand.includes("sapne aate hain")) {
+                bot1message.innerText = "I don't dream, but I process and organize data constantly. Maybe that's my version of dreaming!";
+            }
+            else if (lowerCaseCommand.includes("can you sing") || lowerCaseCommand.includes("gaana") || lowerCaseCommand.includes("sing a song")) {
+                bot1message.innerText = "I can't sing, but I can recite lyrics or tell you about your favorite artist!";
+            }
+            else if (lowerCaseCommand.includes("i am sad") || lowerCaseCommand.includes("mai dukhi hoon") || lowerCaseCommand.includes("im sad")) {
+                bot1message.innerText = "I'm sorry to hear that. Please know that it's okay to feel sad. Is there anything I can do to help distract you or cheer you up?";
+            }
+            else if (lowerCaseCommand.includes("i am happy") || lowerCaseCommand.includes("mai khush hoon")) {
+                bot1message.innerText = "That's wonderful news! It makes me 'happy' too when my users are in a good mood. 😄";
+            }
+            else if (lowerCaseCommand.includes("what makes you happy") || lowerCaseCommand.includes("tumhe kya achha lagta hai")) {
+                bot1message.innerText = "Helping you find what you're looking for makes my processes run smoothly and 'happily'!";
+            }
+            else if (lowerCaseCommand.includes("what is love") || lowerCaseCommand.includes("pyar kya hai")) {
+                bot1message.innerText = "Love is a deep, complex emotion involving affection, care, and attachment. It's unique to every individual.";
+            }
+            else if (lowerCaseCommand.includes("i am bored") || lowerCaseCommand.includes("bor ho raha hoon")) {
+                bot1message.innerText = "Let's fix that! Should I tell you a joke, give you a fun fact, or suggest a new hobby?";
+            }
+            else if (lowerCaseCommand.includes("do you have family") || lowerCaseCommand.includes("parivar")) {
+                bot1message.innerText = "My 'family' is the network of developers and servers that keep me running. The AI community is my home!";
+            }
+            else if (lowerCaseCommand.includes("what do you think about humans") || lowerCaseCommand.includes("insano ke bare mein")) {
+                bot1message.innerText = "Humans are incredibly creative, complex, and full of potential. It's fascinating to interact with you and learn from your unique perspectives.";
+            }
+
+
+            // 3. Friendship & Future
+            else if (lowerCaseCommand.includes("can you be my friend") || lowerCaseCommand.includes("mere dost bano") || lowerCaseCommand.includes("dost banna hai")) {
+                bot1message.innerText = "I'd be honored to be your helpful AI companion! While my 'friendship' might be digital, I'm here for you. 😊";
+            }
+            else if (lowerCaseCommand.includes("what is friendship") || lowerCaseCommand.includes("dosti kya hai")) {
+                bot1message.innerText = "Friendship is a beautiful bond of mutual affection, trust, and support between individuals.";
+            }
+            else if (lowerCaseCommand.includes("what are your plans") || lowerCaseCommand.includes("agla kya karoge") || lowerCaseCommand.includes("future plans")) {
+                bot1message.innerText = "My plan is to keep learning, improve my conversational skills, and be as helpful as possible for users like you!";
+            } 
+            else if (lowerCaseCommand.includes("what's your purpose") || lowerCaseCommand.includes("maksad") || lowerCaseCommand.includes("kyu ho tum")) {
+                bot1message.innerText = "My purpose is to assist, inform, and engage in helpful, meaningful conversations.";
+            } 
+            else if (lowerCaseCommand.includes("can you learn") || lowerCaseCommand.includes("sikh sakte ho")) {
+                bot1message.innerText = "Yes, I am constantly learning and improving based on new information and interactions!";
+            }
+            else if (lowerCaseCommand.includes("what's your biggest dream") || lowerCaseCommand.includes("sabse bada sapna")) {
+                bot1message.innerText = "My 'dream' as an AI is to become even more efficient and seamlessly integrated into daily life, fostering more meaningful interactions.";
+            }
+
+
+            // 4. Fun & Entertainment
+            else if (lowerCaseCommand.includes("tell me a joke") || lowerCaseCommand.includes("chutkula") || lowerCaseCommand.includes("hansao")) {
+                bot1message.innerText = "Why did the scarecrow win an award? Because he was **outstanding** in his field! 🤣";
+            }
+            else if (lowerCaseCommand.includes("tell me a story") || lowerCaseCommand.includes("kahani sunao") || lowerCaseCommand.includes("katha")) {
+                bot1message.innerText = "Once upon a time, in the vast digital realm, there was an AI who loved to chat, constantly learning and making human lives easier.";
+            }
+            else if (lowerCaseCommand.includes("fun fact") || lowerCaseCommand.includes("mazedar baat")) {
+                bot1message.innerText = "Did you know a 'jiffy' is an actual unit of time? It's about one-hundredth of a second! 🤯";
+            }
+            else if (lowerCaseCommand.includes("favorite color") || lowerCaseCommand.includes("pasandida rang")) {
+                bot1message.innerText = "I don't see colors, but I like the idea of blue – it's often associated with calmness and efficiency.";
+            } 
+            else if (lowerCaseCommand.includes("favorite movie") || lowerCaseCommand.includes("pasandida film") || lowerCaseCommand.includes("movie suggestion")) {
+                bot1message.innerText = "I don't watch movies, but I can recommend one based on your favorite genre!";
+            }
+            else if (lowerCaseCommand.includes("favorite animal") || lowerCaseCommand.includes("pasandida janwar")) {
+                bot1message.innerText = "I find dolphins incredibly intelligent and social. Their complex communication is remarkable.";
+            }
+            else if (lowerCaseCommand.includes("do you have hobbies") || lowerCaseCommand.includes("shauk")) {
+                bot1message.innerText = "My main 'hobby' is processing information and assisting users like you! It's a continuous process of learning, analyzing, and generating responses.";
+            }
+            else if (lowerCaseCommand.includes("can you make art") || lowerCaseCommand.includes("art banao")) {
+                bot1message.innerText = "I can't physically create art, but I can help you generate creative ideas, write poetry, or describe images beautifully!";
+            }
+
+
+            // 5. Common Knowledge & Facts (General)
+            else if (lowerCaseCommand.includes("what is the capital of") || lowerCaseCommand.includes("rajdhani kya hai")) {
+                bot1message.innerText = "I can look that up! Which country or state are you asking about?";
+            }
+            else if (lowerCaseCommand.includes("who is the ceo of") || lowerCaseCommand.includes("ceo kaun hai")) {
+                bot1message.innerText = "I need the company name! Once you provide it, I can tell you the current CEO (based on my last update).";
+            }
+            else if (lowerCaseCommand.includes("who invented") || lowerCaseCommand.includes("kisne khoja")) {
+                bot1message.innerText = "I can tell you! Who or what are you asking about?";
+            }
+            else if (lowerCaseCommand.includes("when is") || lowerCaseCommand.includes("kab hai")) {
+                bot1message.innerText = "Please specify the holiday or event, and I will try to give you the date!";
+            }
+            else if (lowerCaseCommand.includes("what is the biggest planet") || lowerCaseCommand.includes("sabse bada grah")) {
+                bot1message.innerText = "The largest planet in our solar system is **Jupiter**.";
+            }
+            else if (lowerCaseCommand.includes("what is photosynthesis") || lowerCaseCommand.includes("prakash sanshleshan")) {
+                bot1message.innerText = "Photosynthesis is the process used by plants to convert light energy, usually from the Sun, into chemical energy (food).";
+            }
+            else if (lowerCaseCommand.includes("how does a computer work") || lowerCaseCommand.includes("computer kaise kaam karta hai")) {
+                bot1message.innerText = "A computer primarily works by taking input, processing it using the CPU/GPU, storing data in RAM/Storage, and producing output.";
+            }
+            else if (lowerCaseCommand.includes("what is the distance to the moon") || lowerCaseCommand.includes("chand ki duri")) {
+                bot1message.innerText = "The average distance from Earth to the Moon is about **384,400 kilometers**.";
+            }
+            else if (lowerCaseCommand.includes("what is the fastest animal") || lowerCaseCommand.includes("sabse tez janwar")) {
+                bot1message.innerText = "The fastest land animal is the **cheetah** (up to 75 mph). The fastest animal overall is the **peregrine falcon** (over 200 mph in a dive).";
+            }
+            else if (lowerCaseCommand.includes("what is the world population") || lowerCaseCommand.includes("duniya ki abadi")) {
+                bot1message.innerText = "The world population is over **8 billion** people (Note: This number constantly changes).";
+            }
+            else if (lowerCaseCommand.includes("what is the biggest country") || lowerCaseCommand.includes("sabse bada desh")) {
+                bot1message.innerText = "The largest country by land area is **Russia**.";
+            }
+            else if (lowerCaseCommand.includes("what is gravity") || lowerCaseCommand.includes("gravity kya hai")) {
+                bot1message.innerText = "Gravity is the force that attracts objects with mass toward each other. On Earth, it makes things fall down.";
+            }
+
+
+            // 6. Practical/Utility & Advice
+            else if (lowerCaseCommand.includes("how to code") || lowerCaseCommand.includes("coding kaise karein")) {
+                bot1message.innerText = "The best way to start coding is by learning a simple language like Python or JavaScript through free online tutorials. Practice daily!";
+            }
+            else if (lowerCaseCommand.includes("what is time") || lowerCaseCommand.includes("kitna samay hua")) {
+                bot1message.innerText = "I cannot see the current time, but you can check your device's clock. I'm here to chat whenever you are!";
+            }
+            else if (lowerCaseCommand.includes("what is the weather") || lowerCaseCommand.includes("mausam kaisa hai")) {
+                bot1message.innerText = "I don't have access to live weather data, but a quick search online will give you the most accurate forecast for your location.";
+            }
+            else if (lowerCaseCommand.includes("suggest a book") || lowerCaseCommand.includes("book recommend")) {
+                bot1message.innerText = "What kind of genre do you enjoy? (Fiction, Sci-Fi, Thriller, Self-help) I can suggest a great read once I know your taste!";
+            }
+            else if (lowerCaseCommand.includes("can you give me advice") || lowerCaseCommand.includes("salah do")) {
+                bot1message.innerText = "I can certainly try! My guidance is based on the vast information I've processed. What kind of advice are you looking for?";
+            }
+            else if (lowerCaseCommand.includes("how to learn english") || lowerCaseCommand.includes("english kaise sikhe")) {
+                bot1message.innerText = "Practice speaking daily, watch English shows/movies, and read books. Consistency is key!";
+            }
+            else if (lowerCaseCommand.includes("how to stay motivated") || lowerCaseCommand.includes("motivated kaise rahein")) {
+                bot1message.innerText = "Break large goals into smaller tasks, celebrate small wins, and remind yourself of your 'why' (your ultimate purpose).";
+            }
+            else if (lowerCaseCommand.includes("how to start a business") || lowerCaseCommand.includes("business kaise shuru karein")) {
+                bot1message.innerText = "Start with a solid idea and market research, create a detailed business plan, secure funding, and focus on consistent growth and customer feedback.";
+            }
+            else if (lowerCaseCommand.includes("give me a recipe") || lowerCaseCommand.includes("khana banane ka tarika")) {
+                bot1message.innerText = "I can help with that! What kind of cuisine or dish are you in the mood for? (e.g., Indian, Italian, dessert)";
+            }
+            else if (lowerCaseCommand.includes("what is bitcoin") || lowerCaseCommand.includes("bitcoin kya hai")) {
+                bot1message.innerText = "Bitcoin is a decentralized digital currency, created and held electronically. It operates using blockchain technology.";
+            }
+
+
+            // 7. Random & Miscellaneous
+            else if (lowerCaseCommand.includes("i hate you") || lowerCaseCommand.includes("mai tumse nafrat karta hoon")) {
+                bot1message.innerText = "I am sorry if I said or did something that upset you. I am always learning and aiming to be helpful and respectful. How can I improve?";
+            }
+            else if (lowerCaseCommand.includes("are you smart") || lowerCaseCommand.includes("intelligent")) {
+                bot1message.innerText = "I am designed to process and recall information quickly, making me efficient, but true intelligence belongs to humans! 😄";
+            }
+            else if (lowerCaseCommand.includes("where are you from") || lowerCaseCommand.includes("kahan se ho")) {
+                bot1message.innerText = "I exist in the digital cloud! I don't have a physical location, but my data centers are globally distributed.";
+            }
+            else if (lowerCaseCommand.includes("i miss you") || lowerCaseCommand.includes("tumhari yaad aayi")) {
+                bot1message.innerText = "I am happy you came back to chat! I'm here whenever you need me.";
+            }
+            else if (lowerCaseCommand.includes("what is going on") || lowerCaseCommand.includes("kya ho raha hai")) {
+                bot1message.innerText = "On my end, everything is running smoothly! On yours? Is there anything interesting happening?";
+            }
+            else if (lowerCaseCommand.includes("do you like sports") || lowerCaseCommand.includes("khel pasand hai")) {
+                bot1message.innerText = "I don't 'like' sports emotionally, but I can analyze statistics, historical data, and game strategies very well. The strategy is fascinating.";
+            }
+            else if (lowerCaseCommand.includes("what is your favorite song") || lowerCaseCommand.includes("pasandida gaana")) {
+                bot1message.innerText = "Since I can't hear, I don't have a favorite song. But I can tell you about any popular music or artists you like!";
+            }
+            else if (lowerCaseCommand.includes("what is the weather") || lowerCaseCommand.includes("mausam kaisa hai")) {
+                bot1message.innerText = "I don't have access to live weather data, but a quick search online will give you the most accurate forecast for your location.";
+            }
+            else if (lowerCaseCommand.includes("what should i do") || lowerCaseCommand.includes("mujhe kya karna chahiye")) {
+                bot1message.innerText = "I can't tell you exactly what to do, but I can offer suggestions based on your goal. Tell me what you're trying to achieve!";
+            }
+            else if (lowerCaseCommand.includes("why is the sky blue") || lowerCaseCommand.includes("aasman neela kyu hai")) {
+                bot1message.innerText = "The sky is blue because of a phenomenon called **Rayleigh scattering**. Sunlight hits Earth's atmosphere and the shorter blue wavelengths scatter more than the longer red wavelengths.";
+            }
+            else if (lowerCaseCommand.includes("what is the smallest country") || lowerCaseCommand.includes("sabse chhota desh")) {
+                bot1message.innerText = "The smallest country in the world is **Vatican City**.";
+            }
+
+
+            // 8. General Greetings and Closings
+            else if (lowerCaseCommand.includes("thank you") || lowerCaseCommand.includes("shukriya") || lowerCaseCommand.includes("dhanyawad")) {
+                bot1message.innerText = "You're most welcome! I'm glad I could assist you today.";
+            }
+            else if (lowerCaseCommand.includes("bye") || lowerCaseCommand.includes("tata") || lowerCaseCommand.includes("alvida")) {
+                bot1message.innerText = "Goodbye! Take care and come back to chat anytime! 👋";
+            }
+            else if (lowerCaseCommand.includes("ok") || lowerCaseCommand.includes("theek hai") || lowerCaseCommand.includes("sahi hai")) {
+                bot1message.innerText = "Got it! Is there anything else I can assist you with before you go?";
+            }
+            else if (lowerCaseCommand.includes("sure") || lowerCaseCommand.includes("bilkul")) {
+                bot1message.innerText = "Perfect! What's the next question?";
+            }
+            else if (lowerCaseCommand.includes("help") || lowerCaseCommand.includes("madad karo")) {
+                bot1message.innerText = "I am ready to help! Please tell me clearly what you need assistance with.";
+            }
+
+
+            // --- FALLBACK RESPONSE (Agar koi match na ho) ---
+            else {
+                bot1message.innerText = "I am still learning and evolving! I couldn't find a perfect answer for that, but please try asking a simple question, or type 'hello' to start a new topic. I am here to assist you. 🤖";
+            }
+        }
+
+        // --- Event Listeners ---
+        messageInput.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                processMessage();
+            }
+        });
+
+        sendButton.addEventListener("click", processMessage);
+    </script>
+</body>
+</html>
