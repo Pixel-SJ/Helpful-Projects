@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aesthetic Code Editor</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            --panel-bg: #ffffff;
+            --soft-navy: #334155; 
+            --azure-blue: #3b82f6; 
+            --border-color: #94a3b8; 
+            --text-main: #1e293b;
+            --gutter-bg: #f8fafc;
+        }
+
+        .dark-theme {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --panel-bg: #0f172a;
+            --border-color: #38bdf8;
+            --text-main: #f1f5f9;
+            --gutter-bg: #020617;
+        }
+
+        * { box-sizing: border-box; transition: background 0.3s, color 0.3s; }
+
+        body, html {
+            margin: 0; padding: 0; height: 100vh; width: 100vw;
+            background: var(--bg-gradient);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; display: flex; justify-content: center; align-items: center;
+        }
+
+        /* Loading Screen */
+        #loader {
+            position: fixed; inset: 0;
+            background: var(--bg-gradient);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease;
+        }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(59, 130, 246, 0.1);
+            border-top: 4px solid var(--azure-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* App Shell */
+        .app-shell {
+            width: calc(100% - 20px); height: calc(100% - 20px);
+            background: var(--panel-bg);
+            border: 1.5px solid var(--border-color);
+            border-radius: 16px; display: flex; flex-direction: column;
+            box-shadow: 0 10px 30px rgba(51, 65, 85, 0.1);
+            position: relative; overflow: hidden;
+        }
+
+        /* Navigation */
+        .nav {
+            display: flex; background: var(--panel-bg);
+            border-bottom: 1.5px solid var(--border-color);
+            padding: 6px; align-items: center; gap: 6px;
+        }
+
+        .tab-btn {
+            flex: 1; padding: 10px; border: none; background: transparent;
+            color: var(--soft-navy); font-weight: 700; font-size: 11px;
+            text-transform: uppercase; letter-spacing: 1px;
+            cursor: pointer; border-radius: 10px;
+        }
+
+        .tab-btn.active {
+            background: var(--azure-blue); color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+        }
+
+        .settings-trigger {
+            background: transparent; border: none; font-size: 20px;
+            cursor: pointer; color: var(--soft-navy); padding: 0 12px;
+        }
+
+        /* Content Area */
+        .content { flex: 1; display: flex; overflow: hidden; position: relative; }
+        .panel { display: none; width: 100%; height: 100%; }
+        .panel.active { display: flex; }
+
+        .editor-wrapper { display: flex; width: 100%; height: 100%; position: relative; }
+        
+        .gutter {
+            width: 48px; background: var(--gutter-bg);
+            color: #94a3b8; text-align: center; font-family: monospace;
+            font-size: 14px; border-right: 1px solid var(--border-color);
+            padding-top: 20px; user-select: none; line-height: 1.6;
+            overflow: hidden;
+        }
+
+        textarea {
+            flex: 1; border: none; padding: 20px; outline: none;
+            font-family: 'Consolas', monospace; font-size: 14px;
+            line-height: 1.6; color: var(--text-main);
+            background: transparent; resize: none; overflow: auto;
+            white-space: pre;
+        }
+
+        iframe { width: 100%; height: 100%; border: none; background: white; }
+
+        /* Custom Modal */
+        .modal-overlay {
+            position: absolute; inset: 0; background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(3px); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+
+        .modal {
+            background: var(--panel-bg); border: 1.5px solid var(--border-color);
+            border-radius: 16px; padding: 20px; width: 280px; text-align: center;
+        }
+
+        .modal-btns { display: flex; gap: 8px; margin-top: 15px; }
+        .modal-btn { flex: 1; padding: 9px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
+        .btn-confirm { background: #f43f5e; color: white; }
+        .btn-cancel { background: #f1f5f9; color: #64748b; }
+
+        /* Settings Menu */
+        #settingsMenu {
+            display: none; position: absolute; top: 55px; right: 10px;
+            background: var(--panel-bg); border: 1.5px solid var(--border-color);
+            border-radius: 12px; z-index: 100; flex-direction: column;
+            padding: 8px; gap: 4px; width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .menu-item {
+            background: transparent; border: none; padding: 10px;
+            text-align: left; border-radius: 8px; cursor: pointer;
+            color: var(--text-main); font-weight: 600; font-size: 12px;
+        }
+        .menu-item:hover { background: #f0f9ff; color: var(--azure-blue); }
+
+        footer {
+            padding: 8px 16px; border-top: 1.5px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 10px; color: #94a3b8; font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px; color: var(--azure-blue); font-weight: 600; letter-spacing: 1px;">Preparing Editor...</p>
+    </div>
+
+    <div class="app-shell">
+        <div class="nav">
+            <button class="tab-btn active" onclick="tab('edit', this)">Editor</button>
+            <button class="tab-btn" onclick="tab('view', this)">Preview</button>
+            <button class="settings-trigger" onclick="toggleMenu()">⚙️</button>
+        </div>
+
+        <div id="settingsMenu">
+            <button class="menu-item" onclick="saveFile()">💾 Download Project</button>
+            <button class="menu-item" onclick="document.getElementById('fileIn').click()">📂 Open File</button>
+            <button class="menu-item" onclick="toggleTheme()">🌓 Theme Toggle</button>
+            <button class="menu-item" onclick="askReset()" style="color:#f43f5e">🗑️ Reset Editor</button>
+            <input type="file" id="fileIn" style="display:none" onchange="loadFile(event)">
+        </div>
+
+        <div class="modal-overlay" id="confirmModal">
+            <div class="modal">
+                <h3 style="margin:0; font-size:16px;">Reset Code?</h3>
+                <p style="font-size: 12px; color: #64748b;">All progress will be lost.</p>
+                <div class="modal-btns">
+                    <button class="modal-btn btn-cancel" onclick="closeModal()">Cancel</button>
+                    <button class="modal-btn btn-confirm" onclick="doReset()">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="edit" class="panel active">
+                <div class="editor-wrapper">
+                    <div id="gutter" class="gutter">1</div>
+                    <textarea id="editor" spellcheck="false" oninput="run()" onscroll="sync()"><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Project</title>
+</head>
+<body>
+
+</body>
+</html></textarea>
+                </div>
+            </div>
+            <div id="view" class="panel">
+                <iframe id="preview"></iframe>
+            </div>
+        </div>
+
+        <footer>
+            <span>Status: Ready</span>
+            <span>Credit to <span style="color:var(--azure-blue)">PixelSJ</span></span>
+        </footer>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const gutter = document.getElementById('gutter');
+        const preview = document.getElementById('preview');
+
+        // Loading Screen Logic (3 Seconds)
+        window.onload = () => {
+            const saved = localStorage.getItem('psj-aesthetic-v3');
+            if(saved) editor.value = saved;
+            run();
+
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 800);
+            }, 3000);
+        };
+
+        function sync() { gutter.scrollTop = editor.scrollTop; }
+
+        function run() {
+            const val = editor.value;
+            const lines = val.split('\n').length;
+            gutter.innerHTML = Array.from({length: lines}, (_, i) => i + 1).join('<br>');
+            const doc = preview.contentWindow.document;
+            doc.open(); doc.write(val); doc.close();
+            localStorage.setItem('file-aesthetic-v3', val);
+        }
+
+        function tab(id, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+            document.getElementById('settingsMenu').style.display = 'none';
+        }
+
+        function toggleMenu() {
+            const m = document.getElementById('settingsMenu');
+            m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function askReset() { 
+            document.getElementById('confirmModal').style.display = 'flex'; 
+            document.getElementById('settingsMenu').style.display = 'none';
+        }
+        function closeModal() { document.getElementById('confirmModal').style.display = 'none'; }
+        function doReset() {
+            editor.value = `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <title>Web Project</title>\n</head>\n<body>\n\n</body>\n</html>`;
+            run(); closeModal();
+        }
+
+        function saveFile() {
+            const blob = new Blob([editor.value], {type: 'text/html'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'index.html';
+            a.click();
+            toggleMenu();
+        }
+
+        function loadFile(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (arg) => { editor.value = arg.target.result; run(); };
+            reader.readAsText(file);
+            toggleMenu();
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            toggleMenu();
+        }
+    </script>
+</body>
+</html>
